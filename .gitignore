@@ -94,3 +94,6 @@ ENV/
 
 # other files
 *.egonet
+
+# Mac BS
+.DS_Store
