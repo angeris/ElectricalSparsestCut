@@ -1,5 +1,10 @@
+from scipy.sparse import dok_matrix
 from collections import defaultdict
+
 import os
+import numpy as np
+import scipy as sp
+import scipy.linalg as linalg
 
 def load_dict_network(dataset_dir='./dataset'):
     """Returns a dictionary of connections
@@ -17,5 +22,10 @@ def load_dict_network(dataset_dir='./dataset'):
                 all_connections[curr_key].add(friend)
     return all_connections
 
-
-print load_dict_network()
+def dict_to_sparse(d_connections):
+    N = len(d_connections)
+    to_idx = {p:i for i, p in enumerate(d_connections.keys())}
+    dok = {(to_idx(curr_f),to_idx(neigh_f)):1 for neigh_f in fs for curr_f, fs in d_connections.iteritems()}
+    adj_mat = dok_matrix((N,N))
+    adj_mat.update(dok)
+    return adj_mat
