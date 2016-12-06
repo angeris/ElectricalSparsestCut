@@ -5,6 +5,8 @@ import scipy
 from sklearn import manifold
 import test
 import math
+from sklearn.preprocessing import normalize
+
 
 def find_random_point_in_unit_ball(h):
     point = np.random.rand((h))*2-1
@@ -18,23 +20,33 @@ def get_vertex_weights(graph):
         weights[edge[1]] = weights.get(edge[1],0) + graph[edge]
     return weights
 
-def calculate_subset_expansion(graph, n_vertices, subset): #calculate weighted subset expansion
+def calculate_subset_expansion(graph, n_vertices, subset, previous_expansion_value = None): #calculate weighted subset expansion
     cut_val = 0
 
     subset_dict = {}
     for s in subset: #hash for easy graph expansion calculation
         subset_dict[s] = 0
 
-    for vertex in subset:
+    if previous_expansion_value is None:
+        for vertex in subset:
+            edges = graph.getcol(vertex)
+            for e in edges.keys():
+                if e[0] not in subset_dict.keys():
+                    cut_val += edges[e]
+    else: #just have to calculate expansion difference due to adding the new vertex (last in the list given)
+        cut_val = previous_expansion_value*(len(subset)-1)
+        vertex = subset[-1]
         edges = graph.getcol(vertex)
         for e in edges.keys():
             if e[0] not in subset_dict.keys():
                 cut_val += edges[e]
-
+            elif e[0] != vertex:
+                cut_val -= edges[e]
     return cut_val/len(subset)#max(len(subset), n_vertices - len(subset))
 
 def spectral_embedding(graph, num_sets):
-    embedding = manifold.spectral_embedding(graph, n_components=2*num_sets, eigen_solver=None, random_state=None, eigen_tol=0.0, norm_laplacian=True, drop_first=True)
+    embedding = manifold.spectral_embedding(graph, n_components=2*num_sets, eigen_solver=None, random_state=None, eigen_tol=0.0, norm_laplacian=False, drop_first=True)
+    embedding = normalize(embedding, axis = 0, norm = 'l2')
     return embedding
 
 def random_projection(embedding, num_sets, h=-1):
@@ -82,9 +94,9 @@ def merging(graph, projection, partitioning, num_sets):
         top_kprime_partition_weights[smallest_weight_index] += partition_weights[sorted_partitions[i]]
 
     return top_kprime_partitions
+
 def cheeger_sweep(graph, top_sets, projection, n_vertices, num_sets):
     #note: if needed, this function can be sped up significantly by modifying the expansion value last calculated instead redoing every time.
-
     sets_hat = []
     sets_hat_expansions = []
     #for each of the k_prime subsets, calculate the subset of it that has the best expansion
@@ -93,29 +105,36 @@ def cheeger_sweep(graph, top_sets, projection, n_vertices, num_sets):
         vertex_norms = [np.linalg.norm(projection[v,:], 2) for v in s]
         sorted_vertices = [s[ind] for ind in np.array(vertex_norms).argsort()[::-1]] #argument sort in descending order
         expansions = []
+        prev_value = None #use previous value to speed up new value calculation
         for i in range(len(s)):
-            expansions.append(calculate_subset_expansion(graph, n_vertices, sorted_vertices[0:i+1]))
+            prev_value = calculate_subset_expansion(graph, n_vertices, sorted_vertices[0:i+1], previous_expansion_value = prev_value)
+            expansions.append(prev_value)
         sets_hat.append(sorted_vertices[0:np.argmin(expansions)+1])
         sets_hat_expansions.append(np.min(expansions))
 
     #then return the k subsubsets with the best expansion (NOT A PARTITION?)
     best_expansions = [sets_hat[ind] for ind in np.array(sets_hat_expansions).argsort()[0:num_sets]]
-    
+
     # print [sets_hat_expansions[ind] for ind in np.array(sets_hat_expansions).argsort()[0:num_sets]]
     # print sum([len(s) for s in best_expansions])
     return best_expansions
 def higher_order_cheeger(graph, num_sets, n_vertices):
+    print "starting embedding"
     embedding = spectral_embedding(graph, num_sets)
+    print "starting random projection"
     projection = random_projection(embedding, num_sets)
+    print "starting random partitioning"
     partitioning = random_partitioning(projection)
+    print "starting merging"
     top_sets = merging(graph, projection, partitioning, num_sets)
+    print "starting cheeger sweep"
     final_sets = cheeger_sweep(graph, top_sets, projection, n_vertices, num_sets)
     print final_sets
+    
 def main_test():
     n_sets = 10
-    n_vertices = 1000
+    n_vertices = 500
     random_g = test.create_random_sparse_graph(n_vertices = n_vertices);
-
     higher_order_cheeger(random_g, n_sets,n_vertices)
 
 main_test()
