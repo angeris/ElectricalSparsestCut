@@ -13,7 +13,7 @@ def test_graph_generation():
     print (constraints)
 
 def test_max_flow_cut():
-    G, constraints = algorithms.generate_graphs_with_constraints(n = 100, m = 2, k = 2)
+    G, constraints = algorithms.generate_graphs_with_constraints(n = 1000, m = 2, k = 2)
     partitions = algorithms.max_flow_cut(G, constraints, 2)
     print (partitions)
     utilities.draw_partitions(G, partitions)
