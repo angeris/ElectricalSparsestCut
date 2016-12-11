@@ -5,6 +5,9 @@ import cvxpy as cvx
 import numpy as np
 import scipy as sp
 
+def generate_graphs_with_constraints():
+    raise NotImplementedError()
+
 def brute_force(graph, constraints):
     raise NotImplementedError()
 
