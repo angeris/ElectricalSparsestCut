@@ -11,7 +11,7 @@ import scipy.sparse.linalg as linalg
 def generate_graphs_with_constraints(n = 100, k = 2, m = 2):
     if m < k:
         raise Exception('m (number of constraints) less than k (number of clusters)')
-    G = nx.gnp_random_graph(n, 10*math.pow(math.log(n),3)/n) #erdos renyi graph that is probably connected
+    G = nx.fast_gnp_random_graph(n, 10*math.pow(math.log(n),3)/n) #erdos renyi graph that is probably connected
     G = nx.convert_node_labels_to_integers(max(nx.connected_component_subgraphs(G), key=len)) #returns largest connected component
     constraints = {}
     for i,x in enumerate(np.random.choice(len(G), size=m)):
