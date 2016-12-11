@@ -62,12 +62,11 @@ def max_flow_cut(graph, constraints, k):
 def sdp_partition(graph, constraints, k):
     raise NotImplementedError()
 
-def flow_cut(graph, constraints, k=2):
+def flow_cut(graph, constraints, k=2, verbose=True):
     if k!=2: raise NotImplementedError()
     # form contraction mapping
     adjmat = nx.adjacency_matrix(graph).asfptype()
     degrees = np.array(list(float(graph.degree(v)) for v in graph))
-    print degrees
     adjmat /= degrees[:,None]
 
     nodes_list = graph.nodes()
@@ -81,8 +80,12 @@ def flow_cut(graph, constraints, k=2):
         adjmat[ci, :] = util.unit_basis(N, ci)
         init_vector[ci] = val
 
-    new_vec, prev_vec = None, init_vector
-    for i in range(20):
-        new_vec = adjmat.dot(prev_vec)
-        print np.max(new_vec-prev_vec)
+    new_vec, prev_vec = None, init_vector.reshape(10,1)
+
+    for i in range(100):
+        new_vec = adjmat*prev_vec
+        prev_vec = new_vec
+        if i%10==0 and verbose:
+            print 'curr_norm : {}'.format(np.max(new_vec - prev_vec))
+
     print new_vec
