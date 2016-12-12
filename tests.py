@@ -18,5 +18,11 @@ def test_max_flow_cut():
     print (partitions)
     utilities.draw_partitions(G, partitions)
 
+def test_sdp_partition():
+    G, constraints = algorithms.generate_graphs_with_constraints(n = 100, m = 2, k = 2)
+    partitions = algorithms.sdp_partition(G, constraints, 2)
+    print (partitions)
+    utilities.draw_partitions(G, partitions)
 # test_graph_generation()
-test_max_flow_cut()
+# test_max_flow_cut()
+test_sdp_partition()

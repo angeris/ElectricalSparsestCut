@@ -1,7 +1,7 @@
 # Algorithms library for testing
 
 import networkx as nx
-# import cvxpy as cvx
+import cvxpy as cvx
 import numpy as np
 import scipy as sp
 import math
@@ -38,10 +38,8 @@ def brute_force(graph, constraints, k):
     raise NotImplementedError()
 
 def max_flow_cut(graph, constraints, k):
-    if k!=2:
-        raise Exception('Max flow only applicable for 2 partitions')
-    if len(constraints.keys())!=2:
-        raise Exception('Max flow only applicable with 2 constraints')
+    if k!=2: raise Exception('Max flow only applicable for 2 partitions')
+    if len(constraints.keys())!=2: raise Exception('Max flow only applicable with 2 constraints')
 
     graph_copy = graph.copy()
     keys = list(constraints.keys())
@@ -60,6 +58,22 @@ def max_flow_cut(graph, constraints, k):
     return partition
 
 def sdp_partition(graph, constraints, k):
+    adjmat = nx.to_numpy_matrix(graph, weight = 'weight')
+    n = nx.number_of_nodes(graph)
+    Y = cvx.Variable(n,n)
+    obj = cvx.Maximize(cvx.sum_entries(np.tril(adjmat)*Y))
+    consts = [Y == Y.T, Y>>0]
+    for i in range(n):
+        consts.append(Y[i,i] == 1)
+    for c1 in constraints.keys():
+        for c2 in constraints.keys():
+            if constraints[c1]!=constraints[c2]:
+                consts.append(Y[c1,c2] == -1)
+    prob = cvx.Problem(obj, consts)
+    prob.solve(solver = 'SCS')
+    print prob.status
+    print Y.value
+
     raise NotImplementedError()
 
 def flow_cut(graph, constraints, k=2, verbose=True):
