@@ -76,30 +76,37 @@ def sdp_partition(graph, constraints, k):
 
     raise NotImplementedError()
 
-def flow_cut(graph, constraints, k=2, verbose=True):
+def flow_cut(graph, constraints, k=2, max_iter=100, tol=1e-5, verbose=True):
     if k!=2: raise NotImplementedError()
+    N = len(graph)
+
     # form contraction mapping
-    adjmat = nx.adjacency_matrix(graph).asfptype()
-    degrees = np.array(list(float(graph.degree(v)) for v in graph))
-    adjmat /= degrees[:,None]
+    condmat = nx.adjacency_matrix(graph).asfptype()
+    np.reciprocal(condmat.data, out=condmat.data)
+    c_mat = sp.sparse.diags(np.asarray(1./np.sum(condmat, 1)).flatten(), 0)
+    condmat = c_mat*condmat
 
     nodes_list = graph.nodes()
-    N = len(nodes_list)
     ntoidx = {n:i for i,n in enumerate(nodes_list)}
 
     init_vector = np.zeros(N)
 
     for v, val in constraints.iteritems():
         ci = ntoidx[v]
-        adjmat[ci, :] = util.unit_basis(N, ci)
+        condmat[ci, :] = util.unit_basis(N, ci)
         init_vector[ci] = val
 
-    new_vec, prev_vec = None, init_vector.reshape(10,1)
+    new_vec, prev_vec = None, init_vector.reshape(N,1)
+    l_iter = 5*int(math.ceil(math.log10(max_iter)))
 
-    for i in range(100):
-        new_vec = adjmat*prev_vec
+    for i in range(max_iter):
+        new_vec = condmat*prev_vec
+        curr_tol = np.max(new_vec-prev_vec)
+        if (i+1)%l_iter==0 and verbose:
+            print 'curr_norm : {} on iteration {}/{}'.format(curr_tol, i+1,
+                                                             max_iter)
+        if curr_tol < tol:
+            break
         prev_vec = new_vec
-        if i%10==0 and verbose:
-            print 'curr_norm : {}'.format(np.max(new_vec - prev_vec))
 
     print new_vec
