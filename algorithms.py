@@ -92,11 +92,19 @@ def sdp_partition(graph, constraints, k):
                 partition[i] = constraints[con]
     return partition
 
+def e_boundary(graph, v_list, data=None):
+    edges = graph.edges(v_list, data=data, default=1)
+    return (e for e in edges if e[1] not in v_list)
+
+def cut_weight(graph, v_list):
+    edges = e_boundary(graph, v_list)
+    return sum(w for u, v, w in edges)
+
 def flow_cut(graph, constraints, k=2, max_iter=100, tol=1e-5, verbose=True):
     if k!=2: raise NotImplementedError()
     N = len(graph)
 
-    # form contraction mapping
+    # form mapping
     condmat = nx.adjacency_matrix(graph).asfptype()
     np.reciprocal(condmat.data, out=condmat.data)
     c_mat = sp.sparse.diags(np.asarray(1./np.sum(condmat, 1)).flatten(), 0)
@@ -113,7 +121,7 @@ def flow_cut(graph, constraints, k=2, max_iter=100, tol=1e-5, verbose=True):
         init_vector[ci] = val
 
     new_vec, prev_vec = None, init_vector.reshape(N,1)
-    l_iter = 5*int(math.ceil(math.log10(max_iter)))
+    l_iter = 5*int(math.ceil(math.log10(max_iter))) # Random heuristic I came up with for funsies
 
     for i in range(max_iter):
         new_vec = condmat*prev_vec
@@ -125,4 +133,23 @@ def flow_cut(graph, constraints, k=2, max_iter=100, tol=1e-5, verbose=True):
             break
         prev_vec = new_vec
 
-    print new_vec
+    final_vec = np.asarray(new_vec).flatten()
+    cluster1 = set()
+    idx_arr = np.argsort(final_vec)
+    sor_arr = final_vec[idx_arr]
+
+    min_cut, min_idx = None, None
+    v_set = set(nodes_list)
+    curr_set = set()
+
+    for i, e in enumerate(sor_arr):
+        if i>=len(sor_arr)-1:
+            break
+        curr_vertex = nodes_list[idx_arr[i]]
+        curr_set.add(curr_vertex)
+        curr_cut = cut_weight(graph, curr_set)
+        if min_cut == None or min_cut > curr_cut:
+            min_idx, min_cut = i, curr_cut
+
+    print nodes_list[:min_idx+1]
+    return set(nodes_list[:min_idx+1])
