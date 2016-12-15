@@ -26,6 +26,8 @@ def generate_graphs_with_constraints(n = 100, k = 2, m = 2):
         weight = np.random.rand()
         G.edge[u][v]['weight'] = weight
         G.edge[v][u]['weight'] = weight
+        G.edge[u][v]['invweight'] = 1/weight
+        G.edge[u][v]['invweight'] = 1/weight
 
     #make constraint edges full connected:
     # for con in constraints:
@@ -44,7 +46,7 @@ def max_flow_cut(graph, constraints, k):
 
     graph_copy = graph.copy()
     keys = list(constraints.keys())
-    cut_value, partial = nx.minimum_cut(graph_copy, keys[0], keys[1], capacity = 'weight')
+    cut_value, partial = nx.minimum_cut(graph_copy, keys[0], keys[1], capacity = 'invweight')
     reachable, non_reachable = partial
     cutset = set()
     for u, nbrs in ((n, graph_copy[n]) for n in reachable):
