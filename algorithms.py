@@ -8,6 +8,14 @@ import math
 import util
 import scipy.sparse.linalg as linalg
 
+def e_boundary(graph, v_list, data=None):
+    edges = graph.edges(v_list, data=data, default=1)
+    return (e for e in edges if e[1] not in v_list)
+
+def cut_weight(graph, v_list, data=None):
+    edges = e_boundary(graph, v_list, data=data)
+    return sum(w for u, v, w in edges)
+
 def generate_graphs_with_constraints(n = 100, k = 2, m = 2):
     if m < k:
         raise Exception('m (number of constraints) less than k (number of clusters)')
@@ -56,6 +64,7 @@ def max_flow_cut(graph, constraints, k):
         for node in nx.algorithms.components.node_connected_component(graph_copy, con):
             partition[node] = constraints[con]
 
+    print 'max flow weight : {}'.format(cut_weight(graph, {v for v,k in partition.iteritems() if k==0}, data='weight'))
     return partition
 
 def sample_spherical(npoints, ndim=3):
@@ -92,20 +101,13 @@ def sdp_partition(graph, constraints, k):
                 partition[i] = constraints[con]
     return partition
 
-def e_boundary(graph, v_list, data=None):
-    edges = graph.edges(v_list, data=data, default=1)
-    return (e for e in edges if e[1] not in v_list)
 
-def cut_weight(graph, v_list):
-    edges = e_boundary(graph, v_list)
-    return sum(w for u, v, w in edges)
-
-def flow_cut(graph, constraints, k=2, max_iter=100, tol=1e-5, verbose=True):
+def flow_cut(graph, constraints, k=2, max_iter=10000, tol=1e-5, verbose=False):
     if k!=2: raise NotImplementedError()
     N = len(graph)
 
     # form mapping
-    condmat = nx.adjacency_matrix(graph).asfptype()
+    condmat = nx.adjacency_matrix(graph, weight='weight').asfptype()
     np.reciprocal(condmat.data, out=condmat.data)
     c_mat = sp.sparse.diags(np.asarray(1./np.sum(condmat, 1)).flatten(), 0)
     condmat = c_mat*condmat
@@ -134,21 +136,21 @@ def flow_cut(graph, constraints, k=2, max_iter=100, tol=1e-5, verbose=True):
         prev_vec = new_vec
 
     final_vec = np.asarray(new_vec).flatten()
-    cluster1 = set()
     idx_arr = np.argsort(final_vec)
     sor_arr = final_vec[idx_arr]
+    # return {nodes_list[i]:0 if final_vec[i] < .5 else 1 for i in range(N)}
 
     min_cut, min_idx = None, None
     v_set = set(nodes_list)
     curr_set = set()
 
-    for i, e in enumerate(sor_arr):
-        if i>=len(sor_arr)-1:
-            break
+    for i in range(N-1):
         curr_vertex = nodes_list[idx_arr[i]]
+        print curr_vertex
         curr_set.add(curr_vertex)
-        curr_cut = cut_weight(graph, curr_set)
+        curr_cut = cut_weight(graph, curr_set, data='weight')
         if min_cut == None or min_cut > curr_cut:
             min_idx, min_cut = i, curr_cut
 
-    return {v:0 if idx_arr[ntoidx[v]] <= min_idx else 1 for v in nodes_list}
+    print 'minimum weight flowcut: {}'.format(min_cut)
+    return {nodes_list[idx_arr[i]]:0 if i <= min_idx else 1 for i in range(N)}, final_vec, idx_arr
