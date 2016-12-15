@@ -35,7 +35,7 @@ def generate_graphs_with_constraints(n = 100, k = 2, m = 2):
         G.edge[u][v]['weight'] = weight
         G.edge[v][u]['weight'] = weight
         G.edge[u][v]['invweight'] = 1/weight
-        G.edge[u][v]['invweight'] = 1/weight
+        G.edge[v][u]['invweight'] = 1/weight
 
     #make constraint edges full connected:
     # for con in constraints:
@@ -66,7 +66,7 @@ def max_flow_cut(graph, constraints, k):
         for node in nx.algorithms.components.node_connected_component(graph_copy, con):
             partition[node] = constraints[con]
 
-    print 'max flow weight : {}'.format(cut_weight(graph, {v for v,k in partition.iteritems() if k==0}, data='weight'))
+    print 'max flow weight : {}'.format(cut_weight(graph, {v for v,k in partition.iteritems() if k==0}, data='invweight'))
     return partition
 
 def sample_spherical(npoints, ndim=3):
@@ -148,9 +148,8 @@ def flow_cut(graph, constraints, k=2, max_iter=10000, tol=1e-5, verbose=False):
 
     for i in range(N-1):
         curr_vertex = nodes_list[idx_arr[i]]
-        print curr_vertex
         curr_set.add(curr_vertex)
-        curr_cut = cut_weight(graph, curr_set, data='weight')
+        curr_cut = cut_weight(graph, curr_set, data='invweight')
         if min_cut == None or min_cut > curr_cut:
             min_idx, min_cut = i, curr_cut
 
