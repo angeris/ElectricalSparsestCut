@@ -12,7 +12,8 @@ def generate_graphs_with_constraints(n = 100, k = 2, m = 2):
     if m < k:
         raise Exception('m (number of constraints) less than k (number of clusters)')
     # G = nx.gnp_random_graph(n, math.pow(math.log(n),1.5)/n) #erdos renyi graph that is probably connected
-    G = nx.connected_watts_strogatz_graph(n, k=5, p=np.log(n)/n, tries=100, seed=None)
+    # G = nx.powerlaw_cluster_graph(n,int(np.log(n)), 3.0/int(np.log(n)) )
+    G = nx.connected_watts_strogatz_graph(n, k=5, p=1.25*np.log(n)/n, tries=100, seed=None)
     G = nx.convert_node_labels_to_integers(max(nx.connected_component_subgraphs(G), key=len)) #returns largest connected component
     constraints = {}
     for i,x in enumerate(np.random.choice(len(G), size=m)):
@@ -57,24 +58,39 @@ def max_flow_cut(graph, constraints, k):
 
     return partition
 
+def sample_spherical(npoints, ndim=3):
+    vec = np.random.randn(ndim, npoints)
+    vec /= np.linalg.norm(vec, axis=0)
+    return vec
+
 def sdp_partition(graph, constraints, k):
+    if k!=2: raise Exception('SDP only applicable for 2 partitions')
     adjmat = nx.to_numpy_matrix(graph, weight = 'weight')
     n = nx.number_of_nodes(graph)
-    Y = cvx.Variable(n,n)
-    obj = cvx.Maximize(cvx.sum_entries(np.tril(adjmat)*Y))
-    consts = [Y == Y.T, Y>>0]
+    Y = cvx.Semidef(n)
+    obj = cvx.Maximize(cvx.sum_entries(cvx.mul_elemwise(np.tril(adjmat),(1-Y))))
+    consts = [Y == Y.T]
     for i in range(n):
         consts.append(Y[i,i] == 1)
     for c1 in constraints.keys():
         for c2 in constraints.keys():
             if constraints[c1]!=constraints[c2]:
-                consts.append(Y[c1,c2] == -1)
+                consts.append(Y[c1,c2] <= math.cos(2*math.pi/k))
+            else:
+                consts.append(Y[c1, c2] == 1)
     prob = cvx.Problem(obj, consts)
     prob.solve(solver = 'SCS')
-    print prob.status
-    print Y.value
-
-    raise NotImplementedError()
+    vecs = Y.value
+    random_cut = sample_spherical(1, ndim = n)
+    partition = {}
+    signs = []
+    for i in range(n):
+        signs.append(np.sign(np.dot(vecs[i,:], random_cut)))
+    for con in constraints:
+        for i in range(n):
+            if signs[con] == signs[i]:
+                partition[i] = constraints[con]
+    return partition
 
 def e_boundary(graph, v_list, data=None):
     edges = graph.edges(v_list, data=data, default=1)
