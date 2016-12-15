@@ -110,7 +110,7 @@ def flow_cut(graph, constraints, k=2, max_iter=100, tol=1e-5, verbose=True):
     for i in range(max_iter):
         new_vec = condmat*prev_vec
         curr_tol = np.max(new_vec-prev_vec)
-        if (i+1)%l_iter==0 and verbose:
+        if verbose and (i+1)%l_iter==0:
             print 'curr_norm : {} on iteration {}/{}'.format(curr_tol, i+1,
                                                              max_iter)
         if curr_tol < tol:
@@ -135,5 +135,4 @@ def flow_cut(graph, constraints, k=2, max_iter=100, tol=1e-5, verbose=True):
         if min_cut == None or min_cut > curr_cut:
             min_idx, min_cut = i, curr_cut
 
-    print nodes_list[:min_idx+1]
-    return set(nodes_list[:min_idx+1])
+    return {v:0 if idx_arr[ntoidx[v]] <= min_idx else 1 for v in nodes_list}
