@@ -35,7 +35,7 @@ def generate_graphs_with_constraints(n = 100, k = 2, m = 2):
         G.edge[u][v]['weight'] = weight
         G.edge[v][u]['weight'] = weight
         G.edge[u][v]['invweight'] = 1/weight
-        G.edge[u][v]['invweight'] = 1/weight
+        G.edge[v][u]['invweight'] = 1/weight
 
     #make constraint edges full connected:
     # for con in constraints:
