@@ -28,7 +28,7 @@ def test_sdp_partition():
 # test_graph_generation() # test_max_flow_cut() test_sdp_partition()
 
 def test_all_algorithms():
-    G, constraints = algorithms.generate_graphs_with_constraints(n = 100, m = 2, k = 2)
+    G, constraints = algorithms.generate_graphs_with_constraints(n = 1000, m = 2, k = 2)
     print 'constraints are : {}'.format(constraints)
     partitions_maxflow = algorithms.max_flow_cut(G.copy(), copy(constraints), 2)
     # partitions_sdp = algorithms.sdp_partition(G.copy(), copy(constraints), 2)
@@ -40,16 +40,16 @@ def test_all_algorithms():
     for v in idxarr:
         print 'voltage {} | set {}'.format(voltages[v], partitions_maxflow[v])
 
-    utilities.draw_partitions(G, partitions_maxflow)
-    plt.savefig('maxflow.png')
-    plt.close()
-
-    # utilities.draw_partitions(G, partitions_sdp)
-    # plt.savefig('sdp.png')
+    # utilities.draw_partitions(G, partitions_maxflow)
+    # plt.savefig('maxflow.png')
     # plt.close()
 
-    utilities.draw_partitions(G, partitions_flowcut)
-    plt.savefig('flowcut.png')
-    plt.close()
+    # # utilities.draw_partitions(G, partitions_sdp)
+    # # plt.savefig('sdp.png')
+    # # plt.close()
+
+    # utilities.draw_partitions(G, partitions_flowcut)
+    # plt.savefig('flowcut.png')
+    # plt.close()
 
 test_all_algorithms()
