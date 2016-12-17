@@ -66,8 +66,9 @@ def max_flow_cut(graph, constraints, k):
         for node in nx.algorithms.components.node_connected_component(graph_copy, con):
             partition[node] = constraints[con]
 
-    print 'max flow weight : {}'.format(cut_weight(graph, {v for v,k in partition.iteritems() if k==0}, data='invweight'))
-    return partition
+    cutweight = cut_weight(graph, {v for v,k in partition.iteritems() if k==0}, data='invweight')
+    # print 'max flow weight : {}'.format(cut_weight(graph, {v for v,k in partition.iteritems() if k==0}, data='invweight'))
+    return partition, cutweight
 
 def sample_spherical(npoints, ndim=3):
     vec = np.random.randn(ndim, npoints)
@@ -153,5 +154,5 @@ def flow_cut(graph, constraints, k=2, max_iter=10000, tol=1e-5, verbose=False):
         if min_cut == None or min_cut > curr_cut:
             min_idx, min_cut = i, curr_cut
 
-    print 'minimum weight flowcut: {}'.format(min_cut)
-    return {nodes_list[idx_arr[i]]:0 if i <= min_idx else 1 for i in range(N)}, final_vec, idx_arr
+    # print 'minimum weight flowcut: {}'.format(min_cut)
+    return {nodes_list[idx_arr[i]]:0 if i <= min_idx else 1 for i in range(N)}, final_vec, idx_arr, min_cut
