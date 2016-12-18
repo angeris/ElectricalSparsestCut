@@ -7,6 +7,10 @@ import scipy as sp
 import math
 import util
 import scipy.sparse.linalg as linalg
+from tqdm import tqdm
+from itertools import product, xrange
+
+range = xrange
 
 def e_boundary(graph, v_list, data=None):
     edges = graph.edges(v_list, data=data, default=1)
@@ -105,7 +109,7 @@ def sdp_partition(graph, constraints, k):
     return partition
 
 
-def flow_cut(graph, constraints, k=2, max_iter=10000, tol=1e-5, verbose=False):
+def voltage_cut(graph, constraints, k=2, max_iter=10000, tol=1e-5, verbose=False):
     if k!=2: raise NotImplementedError()
     N = len(graph)
 
@@ -156,3 +160,57 @@ def flow_cut(graph, constraints, k=2, max_iter=10000, tol=1e-5, verbose=False):
 
     # print 'minimum weight flowcut: {}'.format(min_cut)
     return {nodes_list[idx_arr[i]]:0 if i <= min_idx else 1 for i in range(N)}, final_vec, idx_arr, min_cut
+
+def greedy_cut(q_arr, nodes_list):
+    N, k = q_arr.shape
+    d_idx = {(i,j):q_arr[i,j] for i,j in product(range(N), range(k))}
+    sorted_idx = sorted(d_idx.keys(), key=lambda c: d_idx[c])
+    partitions = {}
+    for i, j in sorted_idx:
+        if i in partitions:
+            continue
+        partitions[i] = j
+    return partitions
+
+def voltage_cut_wrapper(graph, constraints, cut_function, k=2, max_iter=10000, tol=1e-5, verbose=False):
+    ''' Assumes that constraints[k] maps V->{0,1,...,k}. This may be fixed
+    later if there's any question.
+    '''
+    N = len(graph)
+    if len(constraints) < k:
+        raise ValueError('not enough constraints')
+    Q = np.zeros(N, k) # Matrix of results
+
+    # form mapping
+    condmat = nx.adjacency_matrix(graph, weight='weight').asfptype()
+    np.reciprocal(condmat.data, out=condmat.data)
+    c_mat = sp.sparse.diags(np.asarray(1./np.sum(condmat, 1)).flatten(), 0)
+    condmat = c_mat*condmat
+
+    nodes_list = graph.nodes()
+    ntoidx = {n:i for i,n in enumerate(nodes_list)}
+
+    for v, val in constraints.iteritems():
+        ci = ntoidx[v]
+        condmat[ci, :] = 0
+        Q[ci, val] = 1
+
+    new_mat = None
+    prev_mat = np.zeros(N,k)
+
+    if verbose: print 'solving system of eq'
+    total_range = tqdm(range(max_iter))
+    for i in tqdm():
+        new_mat = condmat*prev_mat + Q
+        curr_tol = np.max(new_mat-prev_mat)
+        if verbose:
+            total_range.set_description('Current norm : {}'.format(curr_tol))
+        if curr_tol < tol:
+            break
+        prev_mat = new_mat
+
+    Q_array = list(np.asarray(Q))
+
+    # Passes a matrix of voltages (e.g. A[i,j] = i-th node and j-th constraint)
+    # along with a list n[i] which maps indices to vertex labels
+    return cut_function(Q_array, nodes_list)
