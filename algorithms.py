@@ -166,10 +166,12 @@ def greedy_cut(q_arr, nodes_list):
     d_idx = {(i,j):q_arr[i,j] for i,j in product(range(N), range(k))}
     sorted_idx = sorted(d_idx.keys(), key=lambda c: d_idx[c])
     partitions = {}
+
     for i, j in sorted_idx:
         if i in partitions:
             continue
         partitions[i] = j
+
     return partitions
 
 def voltage_cut_wrapper(graph, constraints, cut_function, k=2, max_iter=10000, tol=1e-5, verbose=False):
@@ -200,7 +202,7 @@ def voltage_cut_wrapper(graph, constraints, cut_function, k=2, max_iter=10000, t
 
     if verbose: print 'solving system of eq'
     total_range = tqdm(range(max_iter))
-    for i in tqdm():
+    for i in total_range:
         new_mat = condmat*prev_mat + Q
         curr_tol = np.max(new_mat-prev_mat)
         if verbose:
