@@ -222,7 +222,7 @@ def voltage_cut_wrapper(graph, constraints, cut_function, k=2, max_iter=10000, t
             break
         prev_mat = new_mat
 
-    Q_array = np.asarray(Q)
+    Q_array = np.asarray(new_mat)
 
     # Passes a matrix of voltages (e.g. A[i,j] = i-th node and j-th constraint)
     # along with a list n[i] which maps indices to vertex labels
