@@ -114,7 +114,7 @@ def CalinescuKarloffRabani(graph, constraints, k):
                 if X[u][0,cluster] > p:
                     partition[u] = cluster
                     break;
-        cutweight = cut_weight(graph, {v for v,k in partition.iteritems() if k==0}, data='invweight')
+        cutweight = evaluate(graph, partition, k)
         print i,p,cutweight
         if cutweight < mincutweight:
             mincutweight = cutweight
