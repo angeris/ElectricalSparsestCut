@@ -9,6 +9,7 @@ import util
 import scipy.sparse.linalg as linalg
 from tqdm import tqdm
 from itertools import product, xrange
+from copy import copy
 
 range = xrange
 
@@ -222,8 +223,9 @@ def brute_force(graph, constraints, k=2):
         raise ValueError('not enough constraints')
 
     vertices = [v for v in graph.nodes() if v not in constraints]
-    min_assignment = {}
-    min_evaluation = _brute_force(graph, vertices, 0, {}, min_assignment, k)
+    min_assignment = copy(constraints)
+    min_evaluation = _brute_force(graph, vertices, 0,
+                     copy(constraints), min_assignment, k)
 
     return min_assignment
 
@@ -237,7 +239,8 @@ def _brute_force(graph, vertices, curr_vert_idx, curr_choice, curr_min, k):
 
     for i in range(k):
         curr_choice[curr_vert] = i
-        curr_eval = _brute_force(graph, vertices, curr_vert_idx+1, curr_choice, curr_max, k)
+        curr_eval = _brute_force(graph, vertices, curr_vert_idx+1, 
+                                 curr_choice, curr_max, k)
         if min_eval is None or curr_eval < min_eval:
             min_eval = curr_eval
             curr_min[curr_vert] = i
