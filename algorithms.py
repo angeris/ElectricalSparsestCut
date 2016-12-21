@@ -216,3 +216,30 @@ def voltage_cut_wrapper(graph, constraints, cut_function, k=2, max_iter=10000, t
     # Passes a matrix of voltages (e.g. A[i,j] = i-th node and j-th constraint)
     # along with a list n[i] which maps indices to vertex labels
     return cut_function(Q_array, nodes_list)
+
+def brute_force(graph, constraints, k=2):
+    if len(constraints) < k:
+        raise ValueError('not enough constraints')
+
+    vertices = [v for v in graph.nodes() if v not in constraints]
+    min_assignment = {}
+    min_evaluation = _brute_force(graph, vertices, 0, {}, min_assignment, k)
+
+    return min_assignment
+
+# Runtime is awful here at (|V|-k)^k
+def _brute_force(graph, vertices, curr_vert_idx, curr_choice, curr_min, k):
+    if curr_vert_idx >= len(vertices):
+        return evaluate(graph, curr_choice)
+
+    curr_vert = vertices[curr_vert_idx]
+    min_eval = None
+
+    for i in range(k):
+        curr_choice[curr_vert] = i
+        curr_eval = _brute_force(graph, vertices, curr_vert_idx+1, curr_choice, curr_max, k)
+        if min_eval is None or curr_eval < min_eval:
+            min_eval = curr_eval
+            curr_min[curr_vert] = i
+
+    return min_eval
