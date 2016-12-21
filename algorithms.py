@@ -8,16 +8,16 @@ import math
 import util
 import scipy.sparse.linalg as linalg
 from tqdm import tqdm
-from itertools import product, xrange
+from itertools import product
 from copy import copy
 
 range = xrange
 
-def e_boundary(graph, v_list, data=None):
+def e_boundary(graph, v_list, data='weight'):
     edges = graph.edges(v_list, data=data, default=1)
     return (e for e in edges if e[1] not in v_list)
 
-def cut_weight(graph, v_list, data=None):
+def cut_weight(graph, v_list, data='weight'):
     edges = e_boundary(graph, v_list, data=data)
     return sum(w for u, v, w in edges)
 
@@ -218,6 +218,15 @@ def voltage_cut_wrapper(graph, constraints, cut_function, k=2, max_iter=10000, t
     # along with a list n[i] which maps indices to vertex labels
     return cut_function(Q_array, nodes_list)
 
+
+def evaluate(graph, partitions, k):
+    total_weight = 0
+    for i in range(k):
+        total_weight += cut_weight(graph,
+                                   {v for v in partitions if partitions[v]==k})
+    return total_weight
+
+
 def brute_force(graph, constraints, k=2):
     if len(constraints) < k:
         raise ValueError('not enough constraints')
@@ -227,20 +236,21 @@ def brute_force(graph, constraints, k=2):
     min_evaluation = _brute_force(graph, vertices, 0,
                      copy(constraints), min_assignment, k)
 
+    print 'min_weight assignment is : {}'.format(min_evaluation)
     return min_assignment
 
-# Runtime is awful here at (|V|-k)^k
+# Runtime is awful here at k^(|V|-k)
 def _brute_force(graph, vertices, curr_vert_idx, curr_choice, curr_min, k):
     if curr_vert_idx >= len(vertices):
-        return evaluate(graph, curr_choice)
+        return evaluate(graph, curr_choice, k)
 
     curr_vert = vertices[curr_vert_idx]
     min_eval = None
 
     for i in range(k):
         curr_choice[curr_vert] = i
-        curr_eval = _brute_force(graph, vertices, curr_vert_idx+1, 
-                                 curr_choice, curr_max, k)
+        curr_eval = _brute_force(graph, vertices, curr_vert_idx+1,
+                                 curr_choice, curr_min, k)
         if min_eval is None or curr_eval < min_eval:
             min_eval = curr_eval
             curr_min[curr_vert] = i
