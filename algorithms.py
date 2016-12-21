@@ -221,9 +221,11 @@ def voltage_cut_wrapper(graph, constraints, cut_function, k=2, max_iter=10000, t
 
 def evaluate(graph, partitions, k):
     total_weight = 0
-    for i in range(k):
-        total_weight += cut_weight(graph,
-                                   {v for v in partitions if partitions[v]==k})
+    partition_list = [set() for _ in range(k)]
+    for k, v in partitions.iteritems():
+        partition_list[v].add(k)
+    for p in partition_list:
+        total_weight += cut_weight(graph, p)
     return total_weight
 
 
