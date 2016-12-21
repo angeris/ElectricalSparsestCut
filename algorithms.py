@@ -48,8 +48,6 @@ def generate_graphs_with_constraints(n = 100, k = 2, m = 2):
         weight = np.random.rand()
         G.edge[u][v]['weight'] = weight
         G.edge[v][u]['weight'] = weight
-        G.edge[u][v]['invweight'] = 1/weight
-        G.edge[v][u]['invweight'] = 1/weight
 
     #make constraint edges full connected:
     # for con in constraints:
@@ -105,7 +103,7 @@ def CalinescuKarloffRabani(graph, constraints, k):
     prob = cvx.Problem(obj, consts)
     prob.solve()
     for i,x in enumerate(X):
-        print np.transpose(x.value)
+        # print np.transpose(x.value)
         X[i] = np.transpose(np.asarray(x.value))
 
     #random cutting for now
@@ -116,19 +114,19 @@ def CalinescuKarloffRabani(graph, constraints, k):
         p = np.random.rand()
         korder = list(range(0, k-1))
         if np.random.rand() < .5:
-            korder = reversed(korder)
+            korder = list(reversed(korder))
         for u in range(n):
             partition[u] = k-1;
             for cluster in korder:
                 if X[u][0,cluster] > p:
                     partition[u] = cluster
-                    break;
+                    break
         cutweight = evaluate(graph, partition, k)
-        print i,p,cutweight
+        # print i,p,cutweight
         if cutweight < mincutweight:
             mincutweight = cutweight
             best_partition = partition
-    return partition
+    return best_partition
     #------------------
     # random_cut = sample_spherical(1, ndim = n)
     # partition = {}

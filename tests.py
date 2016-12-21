@@ -32,7 +32,7 @@ def test_CalinescuKarloffRabani():
     G, constraints = algorithms.generate_graphs_with_constraints(n = 100, m = k, k = k)
     partitions = algorithms.CalinescuKarloffRabani(G, constraints, k)
     print (partitions)
-    utilities.draw_partitions(G, partitions)
+    # utilities.draw_partitions(G, partitions)
 
 def test_all_algorithms():
     G, constraints = algorithms.generate_graphs_with_constraints(n = 1000, m = 2, k = 2)
