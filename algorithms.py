@@ -21,6 +21,15 @@ def cut_weight(graph, v_list, data='weight'):
     edges = e_boundary(graph, v_list, data=data)
     return sum(w for u, v, w in edges)
 
+def evaluate(graph, partitions, k):
+    total_weight = 0
+    partition_list = [set() for _ in range(k)]
+    for k, v in partitions.iteritems():
+        partition_list[v].add(k)
+    for p in partition_list:
+        total_weight += cut_weight(graph, p)
+    return total_weight
+
 def generate_graphs_with_constraints(n = 100, k = 2, m = 2):
     if m < k:
         raise Exception('m (number of constraints) less than k (number of clusters)')
@@ -59,7 +68,7 @@ def max_flow_cut(graph, constraints, k):
 
     graph_copy = graph.copy()
     keys = list(constraints.keys())
-    cut_value, partial = nx.minimum_cut(graph_copy, keys[0], keys[1], capacity = 'invweight')
+    cut_value, partial = nx.minimum_cut(graph_copy, keys[0], keys[1], capacity = 'weight')
     reachable, non_reachable = partial
     cutset = set()
     for u, nbrs in ((n, graph_copy[n]) for n in reachable):
@@ -71,9 +80,9 @@ def max_flow_cut(graph, constraints, k):
         for node in nx.algorithms.components.node_connected_component(graph_copy, con):
             partition[node] = constraints[con]
 
-    cutweight = cut_weight(graph, {v for v,k in partition.iteritems() if k==0}, data='invweight')
-    # print 'max flow weight : {}'.format(cut_weight(graph, {v for v,k in partition.iteritems() if k==0}, data='invweight'))
-    return partition, cutweight
+    # cutweight = cut_weight(graph, {v for v,k in partition.iteritems() if k==0}, data='invweight')
+    print 'max flow weight : {}'.format(evaluate(graph, partition, 2))
+    return partition
 
 def sample_spherical(npoints, ndim=3):
     vec = np.random.randn(ndim, npoints)
@@ -155,7 +164,7 @@ def voltage_cut(graph, constraints, k=2, max_iter=10000, tol=1e-5, verbose=False
     for i in range(N-1):
         curr_vertex = nodes_list[idx_arr[i]]
         curr_set.add(curr_vertex)
-        curr_cut = cut_weight(graph, curr_set, data='invweight')
+        curr_cut = cut_weight(graph, curr_set, data='weight')
         if min_cut == None or min_cut > curr_cut:
             min_idx, min_cut = i, curr_cut
 
@@ -173,6 +182,7 @@ def greedy_cut(q_arr, nodes_list):
             continue
         partitions[i] = j
 
+
     return partitions
 
 def voltage_cut_wrapper(graph, constraints, cut_function, k=2, max_iter=10000, tol=1e-5, verbose=False):
@@ -182,7 +192,7 @@ def voltage_cut_wrapper(graph, constraints, cut_function, k=2, max_iter=10000, t
     N = len(graph)
     if len(constraints) < k:
         raise ValueError('not enough constraints')
-    Q = np.zeros(N, k) # Matrix of results
+    Q = np.zeros((N, k)) # Matrix of results
 
     # form mapping
     condmat = nx.adjacency_matrix(graph, weight='weight').asfptype()
@@ -199,7 +209,7 @@ def voltage_cut_wrapper(graph, constraints, cut_function, k=2, max_iter=10000, t
         Q[ci, val] = 1
 
     new_mat = None
-    prev_mat = np.zeros(N,k)
+    prev_mat = np.zeros((N,k))
 
     if verbose: print 'solving system of eq'
     total_range = tqdm(range(max_iter))
@@ -212,22 +222,12 @@ def voltage_cut_wrapper(graph, constraints, cut_function, k=2, max_iter=10000, t
             break
         prev_mat = new_mat
 
-    Q_array = list(np.asarray(Q))
+    Q_array = np.asarray(Q)
 
     # Passes a matrix of voltages (e.g. A[i,j] = i-th node and j-th constraint)
     # along with a list n[i] which maps indices to vertex labels
-    return cut_function(Q_array, nodes_list)
-
-
-def evaluate(graph, partitions, k):
-    total_weight = 0
-    partition_list = [set() for _ in range(k)]
-    for k, v in partitions.iteritems():
-        partition_list[v].add(k)
-    for p in partition_list:
-        total_weight += cut_weight(graph, p)
-    return total_weight
-
+    partitions = cut_function(Q_array, nodes_list)
+    print 'voltage cut weight : {}'.format(evaluate(graph, partitions, k))
 
 def brute_force(graph, constraints, k=2):
     if len(constraints) < k:
