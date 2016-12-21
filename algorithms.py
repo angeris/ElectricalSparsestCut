@@ -48,6 +48,85 @@ def generate_graphs_with_constraints(n = 100, k = 2, m = 2):
 def brute_force(graph, constraints, k):
     raise NotImplementedError()
 
+
+# D = cvx.Variable((n,n))
+# Dprime = cvx.Variable((n,n,n))
+# obj = cvx.Minimize(cvx.sum_entries(cvx.mul_elemwise(adjmat,D)))
+# consts = [D == D.T, D >= 0, D<=1]
+# for i in range(n):
+#     consts.append(D[i,i] == 0)
+# for u in range(n):
+#     for v in range(u+1, n):
+#         for w in range(v+1, n):
+#             conts.append(D[u,v] <= D[v,w] + D[w,u])
+# for c1 in constraints.keys():
+#     for c2 in constraints.keys():
+#         if constraints[c1]!=constraints[c2]:
+#             consts.append(D[c1,c2] = 1)
+# for u in range(n):
+#     s = 0
+#     for c in constraints.keys():
+#         s+= D[u, c]
+#     consts.append(s == k-1)
+def CalinescuKarloffRabani(graph, constraints, k):
+    adjmat = nx.to_numpy_matrix(graph, weight = 'weight')
+    n = nx.number_of_nodes(graph)
+    X = []
+    fun = 0
+    consts = []
+    for i in range(n):
+        x = cvx.Variable(k)
+        consts.extend([x >= 0, cvx.sum_entries(x) == 1])
+        X.append(x)
+    for c in constraints.keys():
+        ei = np.zeros(k)
+        ei[constraints[c]] = 1
+        consts.append(X[c] == ei)
+    for u in range(n):
+        for v in range(u+1, n):
+            fun+=adjmat[u,v]*cvx.norm(X[u] - X[v], 1)
+
+    obj = cvx.Minimize(fun)
+
+    prob = cvx.Problem(obj, consts)
+    prob.solve()
+    for i,x in enumerate(X):
+        print np.transpose(x.value)
+        X[i] = np.transpose(np.asarray(x.value))
+
+    #random cutting for now
+    mincutweight = np.finfo(float).max
+    best_partition = {}
+    for i in range(10):
+        partition = {}
+        p = np.random.rand()
+        korder = list(range(0, k-1))
+        if np.random.rand() < .5:
+            korder = reversed(korder)
+        for u in range(n):
+            partition[u] = k-1;
+            for cluster in korder:
+                if X[u][0,cluster] > p:
+                    partition[u] = cluster
+                    break;
+        cutweight = cut_weight(graph, {v for v,k in partition.iteritems() if k==0}, data='invweight')
+        print i,p,cutweight
+        if cutweight < mincutweight:
+            mincutweight = cutweight
+            best_partition = partition
+    return partition
+    #------------------
+    # random_cut = sample_spherical(1, ndim = n)
+    # partition = {}
+    # signs = []
+    # for i in range(n):
+    #     signs.append(np.sign(np.dot(vecs[i,:], random_cut)))
+    # for con in constraints:
+    #     for i in range(n):
+    #         if signs[con] == signs[i]:
+    #             partition[i] = constraints[con]
+    # return partition
+
 def max_flow_cut(graph, constraints, k):
     if k!=2: raise Exception('Max flow only applicable for 2 partitions')
     if len(constraints.keys())!=2: raise Exception('Max flow only applicable with 2 constraints')

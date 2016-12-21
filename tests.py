@@ -27,6 +27,13 @@ def test_sdp_partition():
     print (partitions)
     utilities.draw_partitions(G, partitions)
 
+def test_CalinescuKarloffRabani():
+    k = 4
+    G, constraints = algorithms.generate_graphs_with_constraints(n = 100, m = k, k = k)
+    partitions = algorithms.CalinescuKarloffRabani(G, constraints, k)
+    print (partitions)
+    utilities.draw_partitions(G, partitions)
+
 def test_all_algorithms():
     G, constraints = algorithms.generate_graphs_with_constraints(n = 1000, m = 2, k = 2)
     print 'constraints are : {}'.format(constraints)
@@ -67,7 +74,9 @@ def get_approx_ratio_basecase():
                 writer.writerow({'n' : n, 'max_flow' : maxflowcut, 'electrical_alg' : flow_cut, 'ratio' : flow_cut/maxflowcut})
             except Exception:
                 pass
-get_approx_ratio_basecase()
+
+test_CalinescuKarloffRabani();
+# get_approx_ratio_basecase()
 
 # test_graph_generation() # test_max_flow_cut() test_sdp_partition()
 # test_all_algorithms()
