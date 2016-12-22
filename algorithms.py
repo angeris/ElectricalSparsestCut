@@ -246,7 +246,17 @@ def voltage_cut(graph, constraints, k=2, max_iter=10000, tol=1e-5, verbose=False
     # print 'minimum weight flowcut: {}'.format(min_cut)
     return {nodes_list[idx_arr[i]]:0 if i <= min_idx else 1 for i in range(N)}, final_vec, idx_arr, min_cut
 
-def greedy_cut(q_arr, nodes_list):
+def both_greedy_and_random_cut(q_arr, nodes_list, graph):
+    N, k = q_arr.shape
+    p1 = greedy_cut(q_arr, nodes_list, graph)
+    p2 = random_cut(q_arr, nodes_list, graph)
+
+    if evaluate(graph, p1, k) < evaluate(graph, p2, k):
+        return p1
+    else:
+        return p2
+
+def greedy_cut(q_arr, nodes_list, graph = None):
     N, k = q_arr.shape
     d_idx = {(i,j):q_arr[i,j] for i,j in product(range(N), range(k))}
     sorted_idx = sorted(d_idx.keys(), key=lambda c: d_idx[c])
@@ -257,8 +267,31 @@ def greedy_cut(q_arr, nodes_list):
             continue
         partitions[i] = j
 
-
     return partitions
+
+def random_cut(q_arr, nodes_list, graph = None):
+    N, k = q_arr.shape
+    d_idx = {(i,j):q_arr[i,j] for i,j in product(range(N), range(k))}
+    mincutweight = np.finfo(float).max
+    best_partition = {}
+    for i in range(10):
+        partition = {}
+        p = np.random.rand()
+        korder = list(range(0, k-1))
+        if np.random.rand() < .5:
+            korder = list(reversed(korder))
+        for u in range(N):
+            partition[u] = k-1;
+            for cluster in korder:
+                if d_idx[(u,cluster)] > p:
+                    partition[u] = cluster
+                    break
+        cutweight = evaluate(graph, partition, k)
+        # print i,p,cutweight
+        if cutweight < mincutweight:
+            mincutweight = cutweight
+            best_partition = partition
+    return best_partition
 
 def voltage_cut_wrapper(graph, constraints, cut_function, k=2, max_iter=10000, tol=1e-5, verbose=False):
     ''' Assumes that constraints[k] maps V->{0,1,...,k}. This may be fixed
@@ -301,7 +334,7 @@ def voltage_cut_wrapper(graph, constraints, cut_function, k=2, max_iter=10000, t
 
     # Passes a matrix of voltages (e.g. A[i,j] = i-th node and j-th constraint)
     # along with a list n[i] which maps indices to vertex labels
-    partitions = cut_function(Q_array, nodes_list)
+    partitions = cut_function(Q_array, nodes_list, graph)
     cutweight = evaluate(graph, partitions, k)
     # print 'voltage cut weight : {}'.format(cutweight)
     return partitions,cutweight
