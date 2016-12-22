@@ -38,7 +38,7 @@ def generate_graphs_with_constraints(n = 100, k = 2, m = 2):
     G = nx.connected_watts_strogatz_graph(n, k=5, p=1.25*np.log(n)/n, tries=100, seed=None)
     G = nx.convert_node_labels_to_integers(max(nx.connected_component_subgraphs(G), key=len)) #returns largest connected component
     constraints = {}
-    for i,x in enumerate(np.random.choice(len(G), size=m)):
+    for i,x in enumerate(np.random.choice(nx.number_of_nodes(G), size=m, replace = False)):
         if i < k:
             constraints[x] = i
         else:
@@ -57,10 +57,8 @@ def generate_graphs_with_constraints(n = 100, k = 2, m = 2):
     #                 G.add_edge(con, v,{'weight':1})
     return G, constraints
 
-def brute_force(graph, constraints, k):
-    raise NotImplementedError()
-
-
+# def brute_force(graph, constraints, k):
+#     raise NotImplementedError()
 # D = cvx.Variable((n,n))
 # Dprime = cvx.Variable((n,n,n))
 # obj = cvx.Minimize(cvx.sum_entries(cvx.mul_elemwise(adjmat,D)))
@@ -126,7 +124,7 @@ def CalinescuKarloffRabani(graph, constraints, k):
         if cutweight < mincutweight:
             mincutweight = cutweight
             best_partition = partition
-    return best_partition
+    return best_partition, mincutweight
     #------------------
     # random_cut = sample_spherical(1, ndim = n)
     # partition = {}
@@ -158,7 +156,7 @@ def max_flow_cut(graph, constraints, k):
             partition[node] = constraints[con]
 
     # cutweight = cut_weight(graph, {v for v,k in partition.iteritems() if k==0}, data='invweight')
-    print 'max flow weight : {}'.format(evaluate(graph, partition, 2))
+    # print 'max flow weight : {}'.format(evaluate(graph, partition, 2))
     return partition
 
 def sample_spherical(npoints, ndim=3):
@@ -304,7 +302,9 @@ def voltage_cut_wrapper(graph, constraints, cut_function, k=2, max_iter=10000, t
     # Passes a matrix of voltages (e.g. A[i,j] = i-th node and j-th constraint)
     # along with a list n[i] which maps indices to vertex labels
     partitions = cut_function(Q_array, nodes_list)
-    print 'voltage cut weight : {}'.format(evaluate(graph, partitions, k))
+    cutweight = evaluate(graph, partitions, k)
+    # print 'voltage cut weight : {}'.format(cutweight)
+    return partitions,cutweight
 
 def brute_force(graph, constraints, k=2):
     if len(constraints) < k:
@@ -315,8 +315,8 @@ def brute_force(graph, constraints, k=2):
     min_evaluation = _brute_force(graph, vertices, 0,
                      copy(constraints), min_assignment, k)
 
-    print 'min_weight assignment is : {}'.format(min_evaluation)
-    return min_assignment
+    # print 'min_weight assignment is : {}'.format(min_evaluation)
+    return min_evaluation
 
 # Runtime is awful here at k^(|V|-k)
 def _brute_force(graph, vertices, curr_vert_idx, curr_choice, curr_min, k):

@@ -75,7 +75,35 @@ def get_approx_ratio_basecase():
             except Exception:
                 pass
 
-test_CalinescuKarloffRabani();
+def higher_k_alltests():
+    with open('higher_k_cut_ratio_values.csv', 'a') as f:
+        writer = csv.DictWriter(f, delimiter = ',', fieldnames = ['n', 'k', 'brute_force', 'CalinescuKarloffRabani', 'electrical_alg', 'ratio_BruteCKR', 'ratio_BruteElectrical', 'ratioCKRElectrical'])
+        # writer.writeheader()
+        for i in range(1000000):
+            n = np.random.randint(low = 10, high = 300);
+            k = np.random.randint(low = 2, high = min(n/3+1, 15))
+            print i,n,
+            try:
+                G, constraints = algorithms.generate_graphs_with_constraints(n = n, m = k, k = k)
+                # print k, len(constraints)
+                partitions_CKR, CKRcut = algorithms.CalinescuKarloffRabani(G.copy(), copy(constraints), k)
+                partitions_flowcut, flow_cut = algorithms.voltage_cut_wrapper(G.copy(), copy(constraints), algorithms.greedy_cut, k, verbose = False)
+                dic = {'n' : n, 'k' : k, 'CalinescuKarloffRabani' : CKRcut, 'electrical_alg' : flow_cut, 'ratioCKRElectrical' : flow_cut/CKRcut}
+                if n < 15:
+                    brutecut = algorithms.brute_force(G.copy(), copy(constraints), k)
+                    dic['brute_force'] = brutecut
+                    dic['ratio_BruteCKR'] = CKRcut/brutecut
+                    dic['ratio_BruteElectrical']= flow_cut/brutecut
+
+                print dic
+
+                writer.writerow(dic)
+            except Exception:
+                print "exception"
+                pass
+
+higher_k_alltests()
+# test_CalinescuKarloffRabani();
 # get_approx_ratio_basecase()
 
 # test_graph_generation() # test_max_flow_cut() test_sdp_partition()
