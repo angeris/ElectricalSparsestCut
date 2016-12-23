@@ -107,7 +107,7 @@ def CalinescuKarloffRabani(graph, constraints, k):
     #random cutting for now
     mincutweight = np.finfo(float).max
     best_partition = {}
-    for i in range(10):
+    for i in range(30):
         partition = {}
         p = np.random.rand()
         korder = list(range(0, k-1))
@@ -274,7 +274,7 @@ def random_cut(q_arr, nodes_list, graph = None):
     d_idx = {(i,j):q_arr[i,j] for i,j in product(range(N), range(k))}
     mincutweight = np.finfo(float).max
     best_partition = {}
-    for i in range(10):
+    for i in range(30):
         partition = {}
         p = np.random.rand()
         korder = list(range(0, k-1))
